@@ -1,8 +1,7 @@
 import unittest
 
-from leafnode import LeafNode
 from textnode import TextNode, TextType
-from main import text_node_to_html_node
+from converterfunctions import text_node_to_html_node
 
 class TextTextToHTML(unittest.TestCase):
     def test_text(self):
