@@ -1,6 +1,31 @@
 from textnode import TextNode, TextType
 from leafnode import LeafNode
-from extractfunctions import extract_markdown_images, extract_markdown_links 
+import re 
+
+def extract_markdown_images(text):
+    """
+    Docstring for extract_markdown_images
+    
+    :param text: Text to look for images in
+    
+    "return: List of tuples with image's alt text and url [(alt,  url), ...]
+
+    Uses regular expressions to find images in markdown formatted strings.
+    """
+    return re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+
+def extract_markdown_links(text):
+    """
+    Docstring for extract_markdown_links
+    
+    :param text: Text to look for links in
+    
+    "return: List of tuples with link's text and url [(text,  url), ...]
+
+    Uses regular expressions to find links in markdown formatted strings.
+    """
+    return re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     """
@@ -60,3 +85,64 @@ def text_node_to_html_node(text_node):
             return LeafNode("img", "", {"src": text_node.url, "alt": text_node.text})
         case _:
             raise Exception("Invalid text_type property")
+
+
+def _split_nodes_by_pattern(old_nodes, extract_fn, markdown_fmt, new_type):
+    converted_nodes = []
+    for node in old_nodes:
+        if node.text_type != TextType.TEXT:
+            converted_nodes.append(node)
+            continue
+        
+        matches = extract_fn(node.text)
+        if len(matches) == 0:
+            converted_nodes.append(node)
+            continue
+        
+        text = node.text
+        for label, url in matches:
+            pattern = markdown_fmt.format(label=label, url=url)
+            pre, text = text.split(pattern, 1)
+            if pre != "":
+                converted_nodes.append(TextNode(pre, TextType.TEXT))
+            converted_nodes.append(TextNode(label, new_type, url))
+        
+        if text != "":
+            converted_nodes.append(TextNode(text, TextType.TEXT))
+    return converted_nodes
+
+
+def split_nodes_image(old_nodes):
+    return _split_nodes_by_pattern( 
+        old_nodes, 
+        extract_markdown_images, 
+        "![{label}]({url})", 
+        TextType.IMAGE,
+    )
+
+
+def split_nodes_link(old_nodes):
+    return _split_nodes_by_pattern(
+        old_nodes,
+        extract_markdown_links,
+        "[{label}]({url})",
+        TextType.LINK,
+    )
+
+
+def text_to_textnodes(text):
+    nodes = [TextNode(text, TextType.TEXT)]
+
+    # Handle Images and Links 
+    nodes = split_nodes_image(nodes)
+    nodes = split_nodes_link(nodes)
+
+    # Handle inline formatting
+    delimiters = [
+        ("**", TextType.BOLD),
+        ("_", TextType.ITALIC),
+        ("`", TextType.CODE),
+    ]
+    for delimiter, text_type in delimiters:
+        nodes = split_nodes_delimiter(nodes, delimiter, text_type)
+    return nodes
