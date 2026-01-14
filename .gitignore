@@ -11,3 +11,6 @@ wheels/
 
 # Editor Settings
 .vscode/
+
+# Others
+list.sh
