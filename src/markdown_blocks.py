@@ -1,14 +1,54 @@
-from blockmarkdownfunctions import (
-    BlockType, 
-    markdown_to_blocks,
-    block_to_block_type,
-)
-from inlinemarkdownfunctions import (
-    text_to_textnodes,
-    text_node_to_html_node
-)
-from textnode import TextNode, TextType
-from parentnode import ParentNode
+from enum import Enum
+from htmlnode import ParentNode
+from inline_markdown import text_to_textnodes
+from textnode import text_node_to_html_node, TextNode, TextType
+
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    ULIST = "unordered_list"
+    OLIST = "ordered_list"
+
+
+def markdown_to_blocks(markdown):
+    """
+    Docstring for markdown_to_blocks
+    
+    :param markdown: Markdown document
+
+    :returns: list of "block" strings, where each block is separated by double new lines. 
+    """
+    blocks = markdown.strip().split("\n\n")
+    return [block.strip() for block in blocks if block != ""]
+
+
+def block_to_block_type(block):
+    lines = block.split("\n")
+
+    if block.startswith( ("# ", "## ", "### ", "#### ", "##### ", "###### ")):
+        return BlockType.HEADING
+    if len(lines) > 1 and lines[0].startswith("```") and lines[-1].startswith("```"):
+        return BlockType.CODE
+    if block.startswith(">"):
+        for line in lines:
+            if not line.startswith(">"):
+                return BlockType.PARAGRAPH
+        return BlockType.QUOTE
+    if block.startswith("- "):
+        for line in lines:
+            if not line.startswith("- "):
+                return BlockType.PARAGRAPH
+        return BlockType.ULIST
+    if block.startswith("1. "):
+        i = 1
+        for line in lines:
+            if not line.startswith(f"{i}. "):
+                return BlockType.PARAGRAPH
+            i += 1
+        return BlockType.OLIST
+    return BlockType.PARAGRAPH
 
 
 def markdown_to_html_node(markdown):
@@ -22,6 +62,7 @@ def markdown_to_html_node(markdown):
 
 
 def block_to_html_node(block):
+    # print(f"\n\n{"*"*70}\nProcessing Block:\n{"-"*70}\n{block}\n{"-"*70}\nwith type: {block_to_block_type(block)}\n{"*"*70}")
     match block_to_block_type(block):
         case BlockType.PARAGRAPH:
             return paragraph_to_html_node(block)
@@ -97,11 +138,12 @@ def ulist_to_html_node(block):
         html_items.append(ParentNode("li", children))
     return ParentNode("ul", html_items)
 
+
 def quote_to_html_node(block):
     lines = block.split("\n")
     new_lines = []
     for line in lines:
-        if not line.startswith("> "):
+        if not line.startswith(">"):
             raise ValueError("invalid quote block") 
         new_lines.append(line.lstrip(">").strip())
     content = " ".join(new_lines)

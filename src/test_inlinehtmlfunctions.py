@@ -1,8 +1,7 @@
 import unittest
 
-from textnode import TextNode, TextType
-from inlinemarkdownfunctions import (
-    text_node_to_html_node, 
+from textnode import TextNode, TextType, text_node_to_html_node
+from inline_markdown import (
     split_nodes_image, 
     split_nodes_link,
     text_to_textnodes,

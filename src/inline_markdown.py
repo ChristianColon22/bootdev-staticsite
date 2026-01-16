@@ -1,5 +1,5 @@
 from textnode import TextNode, TextType
-from leafnode import LeafNode
+from htmlnode import LeafNode
 import re 
 
 def extract_markdown_images(text):
@@ -13,6 +13,7 @@ def extract_markdown_images(text):
     Uses regular expressions to find images in markdown formatted strings.
     """
     return re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+
 
 def extract_markdown_links(text):
     """
@@ -67,24 +68,6 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
         converted_nodes.extend(split_nodes)
     # 6. Return all converted nodes
     return converted_nodes
-
-
-def text_node_to_html_node(text_node):
-    match text_node.text_type:
-        case TextType.TEXT:
-            return LeafNode(None, text_node.text, None)
-        case TextType.BOLD:
-            return LeafNode("b", text_node.text, None)
-        case TextType.ITALIC:
-            return LeafNode("i", text_node.text, None)
-        case TextType.CODE:
-            return LeafNode("code", text_node.text, None)
-        case TextType.LINK:
-            return LeafNode("a", text_node.text, {"href": text_node.url})
-        case TextType.IMAGE:
-            return LeafNode("img", "", {"src": text_node.url, "alt": text_node.text})
-        case _:
-            raise Exception("Invalid text_type property")
 
 
 def _split_nodes_by_pattern(old_nodes, extract_fn, markdown_fmt, new_type):
